@@ -171,6 +171,7 @@
     <ClCompile Include="include\MinHook\hde\hde64.c" />
     <ClCompile Include="include\MinHook\hook.c" />
     <ClCompile Include="include\MinHook\trampoline.c" />
+    <ClCompile Include="Killsay.cpp" />
     <ClCompile Include="src\Core\Core.cpp" />
     <ClCompile Include="src\DllMain.cpp" />
     <ClCompile Include="src\Features\Aimbot\Aimbot.cpp" />
@@ -396,6 +397,7 @@
     <ClInclude Include="include\Steam\steam_api_flat.h" />
     <ClInclude Include="include\Steam\steam_api_internal.h" />
     <ClInclude Include="include\Steam\steam_gameserver.h" />
+    <ClInclude Include="Killsay.h" />
     <ClInclude Include="src\Core\Core.h" />
     <ClInclude Include="src\Features\Aimbot\Aimbot.h" />
     <ClInclude Include="src\Features\Aimbot\AimbotGlobal\AimbotGlobal.h" />

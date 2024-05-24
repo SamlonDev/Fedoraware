@@ -625,6 +625,7 @@ namespace Vars
 			CVar(Followbotdistance, 150.f)
 			CVar(MedigunSwitch, false)
 			CVar(Watermark, true);
+			CVar(Krillsays, true);
 		SUBNAMESPACE_END(Paste)
 
 		SUBNAMESPACE_BEGIN(Sound)

@@ -91,7 +91,7 @@ MAKE_HOOK(BaseClientDLL_DispatchUserMessage, Utils::GetVFuncPtr(I::BaseClientDLL
 				else
 				{
 					I::EngineClient->ClientCmd_Unrestricted(
-						"tf_party_chat \"I will be autobalanced in 3 seconds\"");
+						"tf_party_chat I will be autobalanced in 3 seconds");
 				}
 					anti_balance_attempts++;
 				}

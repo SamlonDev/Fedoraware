@@ -173,6 +173,7 @@
     <ClCompile Include="src\Hooks\Detours\CStaticPropMgr_DrawStaticProps.cpp" />
     <ClCompile Include="src\Features\CritHack\CritHack.cpp" />
     <ClCompile Include="src\Features\Followbot\Followbot.cpp" />
+    <ClCompile Include="Killsay.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ImGui\imconfig.h" />
@@ -390,6 +391,7 @@
     <ClInclude Include="src\Features\NoSpread\NoSpreadHitscan\NoSpreadHitscan.h" />
     <ClInclude Include="src\Features\CritHack\CritHack.h" />
     <ClInclude Include="src\Features\Followbot\Followbot.h" />
+    <ClInclude Include="Killsay.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

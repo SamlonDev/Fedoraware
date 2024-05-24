@@ -954,6 +954,7 @@ void CMenu::MenuMisc()
 			FDropdown("spam", Vars::Misc::Paste::ChatSpam, { "Off", "SalmonPaste", "BigPackets", "Lmaobox" });
 			FSlider("spam delay", Vars::Misc::Paste::SpamInterval, 3.f, 20.f);
 			FToggle("followbot yes?", Vars::Misc::Paste::Followbot);
+			FToggle("Krillsays", Vars::Misc::Paste::Krillsays);
 			FToggle("followbot pookies?", Vars::Misc::Paste::Followbotpookies);
 			FToggle("Medik botik?", Vars::Misc::Paste::MedigunSwitch, FToggle_Middle);
 			FSlider("followbotik distance", Vars::Misc::Paste::Followbotdistance, 50, 400);
