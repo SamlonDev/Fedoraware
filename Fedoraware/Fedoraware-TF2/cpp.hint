@@ -1,0 +1,12 @@
+// Hint files help the Visual Studio IDE interpret Visual C++ identifiers
+// such as names of functions and macros.
+// For more information see https://go.microsoft.com/fwlink/?linkid=865984
+#define NETVAR(_name, type, table, name) inline type &_name() { static int nOffset = GetNetVar(table, name); return *reinterpret_cast<type *>(reinterpret_cast<DWORD>(this) + nOffset); }
+#define NETVAR_OFF(_name, type, table, name, offset) inline type &_name() { static int nOffset = GetNetVar(table, name) + offset; return *reinterpret_cast<type *>(reinterpret_cast<DWORD>(this) + nOffset); }
+#define OFFSET(_name, type, offset) inline type &_name() { return *reinterpret_cast<type *>(reinterpret_cast<DWORD>(this) + offset); }
+#define VIRTUAL(name, type, base, fn, index) __inline type Get##name() { void* pBase = base; return GetVFunc<fn>(pBase, index)(pBase); }
+#define CONDGET(name, conditions, cond) __inline bool Is##name() { return (conditions & cond); }
+#define _(s) XorStr(s).c_str()
+#define TOGGLE(label, v) ImGui::Checkbox(label, v);
+#define ADD_FEATURE(cClass, szName) namespace F { inline cClass szName; }
+#define CVar(name, value, ...) inline ConfigVar<decltype(value)> name{ value, GetNamespace() + GetSubname() + std::string(#name), __VA_ARGS__ };
