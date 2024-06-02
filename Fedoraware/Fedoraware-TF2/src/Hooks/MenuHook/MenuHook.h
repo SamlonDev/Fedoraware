@@ -2,6 +2,11 @@
 #include "../../SDK/SDK.h"
 #include "../Hooks.h"
 
+// Forward declare the classes
+namespace MenuHook { class MenuHookImpl; }
+namespace WndProc { class WndProcImpl; }
+
+// Define the namespaces
 namespace MenuHook
 {
 	void Init();
@@ -10,10 +15,15 @@ namespace MenuHook
 
 namespace WndProc
 {
-	inline HWND hwWindow;
-	inline WNDPROC Original;
-	LONG __stdcall Func(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	class WndProcImpl
+	{
+	public:
+		HWND hwWindow;
+		WNDPROC Original;
 
-	void Init();
-	void Unload();
+		LONG __stdcall Func(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+		static void Init();
+		static void Unload();
+	};
 }
