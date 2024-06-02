@@ -1,6 +1,7 @@
 #pragma once
 
-#include <string>
+#include <array>
+#include <optional>
 
 namespace ICONS
 {
@@ -8,8 +9,10 @@ namespace ICONS
 	inline constexpr int HEIGHT = 64;
 	inline constexpr int UNDEFINED = -1;
 
-	inline std::string TEXTURE[] =
-	{
+	constexpr std::size_t TEXTURE_AMOUNT = 32;
+
+	using TextureArray = std::array<std::string, TEXTURE_AMOUNT>;
+	constexpr TextureArray TEXTURE = {
 		"hud/leaderboard_class_scout.vtf",
 		"hud/leaderboard_class_sniper.vtf",
 		"hud/leaderboard_class_soldier.vtf",
@@ -51,9 +54,12 @@ namespace ICONS
 		"backpack/player/items/crafting/hwn2015_gargoyle_stone.vtf"
 	};
 
-	inline constexpr int TEXTURE_AMOUNT = (sizeof(TEXTURE) / sizeof(TEXTURE[0]));
+	using IDArray = std::array<std::optional<int>, TEXTURE_AMOUNT>;
+	IDArray initializeIDs() {
+		IDArray ids;
+		std::fill(ids.begin(), ids.end(), UNDEFINED);
+		return ids;
+	}
 
-	//C++ wont let me initialize them all with -1 unless I manually do so???
-	//Thats why they're 0 now, set to -1 on intialize, 0 can be a valid ID.
-	inline int ID[TEXTURE_AMOUNT] = { 0 };
+	IDArray ID = initializeIDs();
 }
