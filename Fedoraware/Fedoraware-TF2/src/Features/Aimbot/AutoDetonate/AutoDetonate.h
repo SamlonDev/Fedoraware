@@ -1,14 +1,19 @@
-#pragma once
-#include "../../Feature.h"
+#ifndef AUTODETONATE_H
+#define AUTODETONATE_H
 
+#include "../../Feature.h"
 #include "../AimbotGlobal/AimbotGlobal.h"
+
+namespace Features = Client::Features;
 
 class CAutoDetonate
 {
-	bool CheckDetonation(CBaseEntity* pLocal, EGroupType entityGroup, float flRadiusScale, CUserCmd* pCmd);
-
 public:
-	void Run(CBaseEntity* pLocal, CBaseCombatWeapon* pWeapon, CUserCmd* pCmd);
+    std::optional<bool> CheckDetonation(const CBaseEntity* pLocal, EGroupType entityGroup, float flRadiusScale, const CUserCmd* pCmd);
+
+    void Run(const CBaseEntity* pLocal, const CBaseCombatWeapon* pWeapon, CUserCmd* pCmd);
 };
 
-ADD_FEATURE(CAutoDetonate, AutoDetonate)
+ADD_FEATURE(CAutoDetonate, Features::AutoDetonate)
+
+#endif //AUTODETONATE_H
