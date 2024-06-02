@@ -1,11 +1,21 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+# This is a configuration file for Dependabot version updates.
+# It specifies which package ecosystems to update and where the package manifests are located.
+# For more information, see: https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
 version: 2
 updates:
-  - package-ecosystem: "nuget" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "nuget" # Update packages in the NuGet ecosystem
+    directory: "/" # Look for package manifests in the root directory
     schedule:
-      interval: "weekly"
+      interval: "weekly" # Check for updates once a week
+    versioning-strategy: "auto" # Automatically determine the versioning strategy
+    update-schedule: # Customize the update schedule
+      day-of-week: monday # Check for updates every Monday
+      time: "03:00" # Check for updates at 3:00 AM in the repository's timezone
+    ignore: # Ignore specific updates
+      - dependency-name: "SomePackage" # Ignore updates to "SomePackage"
+        reason: "Not compatible with our codebase" # The reason for ignoring the update
+      - dependency-name: "AnotherPackage" # Ignore updates to "AnotherPackage"
+        reasons: # Multiple reasons for ignoring the update
+          - "Requires manual configuration"
+          - "Not needed in our codebase"
