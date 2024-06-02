@@ -2,8 +2,7 @@
 
 #include "../../Features/Misc/Misc.h"
 #include "../../Features/Logs/Logs.h"
-#include"../../Features/NoSpread/NoSpreadHitscan/NoSpreadHitscan.h"
-
+#include "../../Features/NoSpread/NoSpreadHitscan/NoSpreadHitscan.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include "../../Features/Visuals/Visuals.h"
@@ -38,12 +37,12 @@ MAKE_HOOK(BaseClientDLL_DispatchUserMessage, Utils::GetVFuncPtr(I::BaseClientDLL
 			const int entIdx = msgData.ReadByte();
 			msgData.Seek(8);
 			char typeBuffer[256], nameBuffer[256], msgBuffer[256];
-			if (msgData.GetNumBytesLeft() == 0) { break; }
-			msgData.ReadString(typeBuffer, 256);
-			if (msgData.GetNumBytesLeft() == 0) { break; }
-			msgData.ReadString(nameBuffer, 256);
-			if (msgData.GetNumBytesLeft() == 0) { break; }
-			msgData.ReadString(msgBuffer, 256);
+			if (msgData.GetNumBytesLeft() < 3 * 256) { break; }
+			msgData.ReadString(typeBuffer, sizeof(typeBuffer));
+			if (msgData.GetNumBytesLeft() < 256) { break; }
+			msgData.ReadString(nameBuffer, sizeof(nameBuffer));
+			if (msgData.GetNumBytesLeft() < 256) { break; }
+			msgData.ReadString(msgBuffer, sizeof(msgBuffer));
 
 			std::string chatType(typeBuffer);
 			std::string playerName(nameBuffer);
@@ -73,68 +72,4 @@ MAKE_HOOK(BaseClientDLL_DispatchUserMessage, Utils::GetVFuncPtr(I::BaseClientDLL
 
 			if (Vars::Misc::Automation::AntiAutobalance.Value && msgData.GetNumBitsLeft() > 35)
 			{
-				const INetChannel* server = I::EngineClient->GetNetChannelInfo();
-				const std::string data(bufData);
-
-				if (data.find("TeamChangeP") != std::string::npos && g_EntityCache.GetLocal())
-				{
-					const std::string serverName(server->GetAddress());
-					if (serverName != previous_name)
-					{
-						previous_name = serverName;
-						anti_balance_attempts = 0;
-					}
-					if (anti_balance_attempts < 2)
-					{
-						I::EngineClient->ClientCmd_Unrestricted("retry");
-					}
-				else
-				{
-					I::EngineClient->ClientCmd_Unrestricted(
-						"tf_party_chat I will be autobalanced in 3 seconds");
-				}
-					anti_balance_attempts++;
-				}
-			}
-			break;
-		}
-
-		case VGUIMenu:
-		{
-			// Remove MOTD
-			if (Vars::Visuals::Removals::MOTD.Value)
-			{
-				if (strcmp(reinterpret_cast<char*>(msgData.m_pData), "info") == 0)
-				{
-					I::EngineClient->ClientCmd_Unrestricted("closedwelcomemenu");
-					return true;
-				}
-			}
-
-			break;
-		}
-
-		case ForcePlayerViewAngles:
-		{
-			return Vars::Visuals::Removals::AngleForcing.Value ? true : Hook.Original<FN>()(ecx, edx, type, msgData);
-		}
-
-		case SpawnFlyingBird:
-		case PlayerGodRayEffect:
-		case PlayerTauntSoundLoopStart:
-		case PlayerTauntSoundLoopEnd:
-		{
-			return Vars::Visuals::Removals::Taunts.Value ? true : Hook.Original<FN>()(ecx, edx, type, msgData);
-		}
-
-		case Shake:
-		case Fade:
-		case Rumble:
-		{
-			return Vars::Visuals::Removals::ScreenEffects.Value ? true : Hook.Original<FN>()(ecx, edx, type, msgData);
-		}
-	}
-
-	msgData.Seek(0);
-	return Hook.Original<FN>()(ecx, edx, type, msgData);
-}
+				I
