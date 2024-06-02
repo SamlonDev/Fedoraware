@@ -1,19 +1,8 @@
-/*
-* Base64 encoding/decoding (RFC1341)
-* Copyright (c) 2005-2011, Jouni Malinen <j@w1.fi>
-*
-* This software may be distributed under the terms of the BSD license.
-* See README for more details.
-*/
-
-// 2016-12-12 - Gaspard Petit : Slightly modified to return a std::string 
-// instead of a buffer allocated with malloc.
-
 #pragma once
 #include <string>
+#include <stdexcept>
 
-namespace Base64
-{
+namespace Base64 {
     static constexpr unsigned char base64_table[65] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -23,17 +12,21 @@ namespace Base64
     * @len: Length of the data to be encoded
     * Returns: String with the encoded Base64 data
     */
-    inline std::string Encode(const unsigned char* src, size_t len)
+    std::string Encode(const unsigned char* src, size_t len)
     {
-	    const size_t olen = 4 * ((len + 2) / 3); /* 3-byte blocks to 4-byte */
+        if (src == nullptr) {
+            throw std::invalid_argument("Input data cannot be null");
+        }
+
+        const size_t olen = 4 * ((len + 2) / 3); /* 3-byte blocks to 4-byte */
 
         if (olen < len) {
-            return {}; /* integer overflow */
+            throw std::runtime_error("Input data is too long to be encoded as Base64");
         }
 
         std::string outStr;
         outStr.resize(olen);
-	    auto* out = reinterpret_cast<unsigned char*>(&outStr[0]);
+        unsigned char* out = reinterpret_cast<unsigned char*>(&outStr[0]);
 
         const unsigned char* end = src + len;
         const unsigned char* in = src;
@@ -79,13 +72,25 @@ namespace Base64
     /**
     * Decodes the given data from Base64
     * @data: Data to be decoded
-    * @len: Length of the data to be encoded
+    * @len: Length of the data to be decoded
     * Returns: String with the decoded Base64 data
     */
-    inline std::string Decode(const void* data, const size_t len)
+    std::string Decode(const void* data, const size_t len)
     {
-	    const auto* p = (unsigned char*)data;
-	    const int pad = len > 0 && (len % 4 || p[len - 1] == '=');
+        if (data == nullptr) {
+            throw std::invalid_argument("Input data cannot be null");
+        }
+
+        const auto* p = static_cast<const unsigned char*>(data);
+
+        // Check if the input data is a valid Base64-encoded string
+        for (size_t i = 0; i < len; ++i) {
+            if (p[i] && B64index[p[i]] == -1) {
+                throw std::runtime_error("Input data is not a valid Base64-encoded string");
+            }
+        }
+
+        const int pad = len > 0 && (len % 4 || p[len - 1] == '=');
         const size_t L = ((len + 3) / 4 - pad) * 4;
         std::string str(L / 4 * 3 + pad, '\0');
 
