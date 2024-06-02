@@ -1,3 +1,6 @@
+#ifndef BACKTRACK_H
+#define BACKTRACK_H
+
 #pragma once
 #include "../Feature.h"
 
@@ -10,75 +13,54 @@ public:
 	int SequenceNr;
 	float CurTime;
 
-	CIncomingSequence(int inState, int seqNr, float time)
-	{
-		InReliableState = inState;
-		SequenceNr = seqNr;
-		CurTime = time;
-	}
+	CIncomingSequence(int inState, int seqNr, float time) noexcept
+		: InReliableState(inState), SequenceNr(seqNr), CurTime(time) {}
 };
 
-using BoneMatrixes = struct
+using BoneMatrixes = std::array<std::array<float, 3U[4U]>, 128U>;
+
+class CBacktrack : public Feature<CBacktrack>
 {
-	float BoneMatrix[128][3][4];
-};
+public:
+	bool WithinRewind(const TickRecord& record) const noexcept override;
 
-struct TickRecord
-{
-	float flSimTime = 0.f;
-	float flCreateTime = 0.f;
-	int iTickCount = 0;
-	bool bOnShot = false;
-	BoneMatrixes BoneMatrix{};
-	Vec3 vOrigin = {};
-	Vec3 vCenter = {}; // cham / glow optimization
-	bool bInvalid = false;
-};
+	void SendLerp() noexcept;
+	void UpdateDatagram() noexcept;
+	void StoreNolerp() noexcept;
+	void MakeRecords() noexcept;
+	void CleanRecords() noexcept;
+	std::optional<TickRecord> GetHitRecord(CUserCmd* pCmd, CBaseEntity* pEntity, Vec3 vAngles, Vec3 vPos) const noexcept;
 
-class CBacktrack
-{
-	// logic
-	bool WithinRewind(const TickRecord& record);
-
-	// utils
-	void SendLerp();
-	void UpdateDatagram();
-	void StoreNolerp();
-	void MakeRecords();
-	void CleanRecords();
-	std::optional<TickRecord> GetHitRecord(CUserCmd* pCmd, CBaseEntity* pEntity, Vec3 vAngles, Vec3 vPos);
-
-	// data
+private:
 	std::unordered_map<int, bool> mDidShoot;
 	int iLastCreationTick = 0;
 
-	// data - fake latency
 	std::deque<CIncomingSequence> dSequences;
 	int iLastInSequence = 0;
 
 	bool bLastTickHeld = false;
 
 public:
-	float GetLerp();
-	float GetFake();
-	float GetReal(int iFlow = 0);
+	float GetLerp() const noexcept;
+	float GetFake() const noexcept;
+	float GetReal(int iFlow = 0) const noexcept;
 
-	std::deque<TickRecord>* GetRecords(CBaseEntity* pEntity);
-	std::deque<TickRecord> GetValidRecords(std::deque<TickRecord>* pRecords, CBaseEntity* pLocal = nullptr, bool bDistance = false);
+	std::deque<TickRecord>* GetRecords(CBaseEntity* pEntity) const noexcept;
+	std::deque<TickRecord> GetValidRecords(std::deque<TickRecord>* pRecords, CBaseEntity* pLocal = nullptr, bool bDistance = false) const noexcept;
 
-	void Restart();
-	void FrameStageNotify();
-	void Run(CUserCmd* pCmd);
-	void SetLerp(CGameEvent* pEvent);
-	void ResolverUpdate(CBaseEntity* pEntity);
-	void ReportShot(int iIndex);
-	void AdjustPing(INetChannel* netChannel);
+	void Restart() noexcept;
+	void FrameStageNotify() noexcept;
+	void Run(CUserCmd* pCmd) noexcept;
+	void SetLerp(CGameEvent* pEvent) noexcept;
+	void ResolverUpdate(CBaseEntity* pEntity) noexcept;
+	void ReportShot(int iIndex) noexcept;
+	void AdjustPing(INetChannel* netChannel) noexcept;
 
 	bool bFakeLatency = false;
-	float flWishInterp = G::LerpTime;
-	float flFakeInterp = G::LerpTime;
+	constexpr float flWishInterp = G::LerpTime;
+	constexpr float flFakeInterp = G::LerpTime;
 	std::unordered_map<CBaseEntity*, std::deque<TickRecord>> mRecords;
-	std::unordered_map<CBaseEntity*, std::pair<int, matrix3x4[128]>> mBones;
+	std::unordered_map<CBaseEntity*, std::pair<int, BoneMatrixes>> mBones;
 	std::unordered_map<CBaseEntity*, Vec3> mEyeAngles;
 	std::unordered_map<CBaseEntity*, bool> mLagCompensation;
 
@@ -89,3 +71,5 @@ public:
 };
 
 ADD_FEATURE(CBacktrack, Backtrack)
+
+#endif // BACKTRACK_H
