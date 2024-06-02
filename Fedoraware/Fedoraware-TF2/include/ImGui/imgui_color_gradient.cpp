@@ -4,15 +4,15 @@
 //
 //  Created by David Gallardo on 11/06/16.
 
-
 #include "imgui_color_gradient.h"
 #include "imgui_internal.h"
+#include <vector>
 
-#pragma warning (disable : 4244)
+using namespace std;
 
-static constexpr float GRADIENT_BAR_WIDGET_HEIGHT = 25;
-static constexpr float GRADIENT_BAR_EDITOR_HEIGHT = 40;
-static constexpr float GRADIENT_MARK_DELETE_DIFFY = 40;
+static const float GRADIENT_BAR_WIDGET_HEIGHT = 25;
+static const float GRADIENT_BAR_EDITOR_HEIGHT = 40;
+static const float GRADIENT_MARK_DELETE_DIFFY = 40;
 
 ImGradient::ImGradient()
 {
@@ -20,23 +20,26 @@ ImGradient::ImGradient()
 	AddMark(1.0f, ImColor(1.0f, 1.0f, 1.0f));
 }
 
-ImGradient::~ImGradient() { for (const ImGradientMark* mark : Marks) { delete mark; } }
+ImGradient::~ImGradient()
+{
+	for (auto& mark : Marks) { mark.reset(); }
+}
 
 void ImGradient::AddMark(float position, const ImColor color)
 {
 	position = ImClamp(position, 0.0f, 1.0f);
-	const auto newMark = new ImGradientMark();
+	auto newMark = make_unique<ImGradientMark>();
 	newMark->Position = position;
 	newMark->Color = color.Value;
 
-	Marks.push_back(newMark);
+	Marks.push_back(move(newMark));
 
 	RefreshCache();
 }
 
 void ImGradient::RemoveMark(ImGradientMark* mark)
 {
-	Marks.remove(mark);
+	Marks.remove_if([mark](const unique_ptr<ImGradientMark>& m) { return m.get() == mark; });
 	RefreshCache();
 }
 
@@ -62,33 +65,30 @@ void ImGradient::ComputeColorAt(float position, ImVec4* color) const
 	ImGradientMark* lower = nullptr;
 	ImGradientMark* upper = nullptr;
 
-	for (ImGradientMark* mark : Marks)
+	for (const auto& mark : Marks)
 	{
-		if (mark)
+		if (mark && mark->Position < position)
 		{
-			if (mark->Position < position)
+			if (!lower || lower->Position < mark->Position)
 			{
-				if (!lower || lower->Position < mark->Position)
-				{
-					lower = mark;
-				}
+				lower = mark.get();
 			}
+		}
 
-			if (mark->Position >= position)
+		if (mark && mark->Position >= position)
+		{
+			if (!upper || upper->Position > mark->Position)
 			{
-				if (!upper || upper->Position > mark->Position)
-				{
-					upper = mark;
-				}
+				upper = mark.get();
 			}
 		}
 	}
 
 	if (upper && !lower) { 
-		lower = upper; 
+		lower = upper.get(); 
 	}
 	else if (!upper && lower) { 
-		upper = lower; 
+		upper = lower.get(); 
 	}
 	else if (!lower && !upper)
 	{
@@ -118,11 +118,10 @@ void ImGradient::ComputeColorAt(float position, ImVec4* color) const
 
 void ImGradient::RefreshCache()
 {
-	Marks.sort([](const ImGradientMark* a, const ImGradientMark* b) { return a->Position < b->Position; });
+	Marks.sort([](const unique_ptr<ImGradientMark>& a, const unique_ptr<ImGradientMark>& b) { return a->Position < b->Position; });
 
 	for (int i = 0; i < 256; ++i) { ComputeColorAt(i / 255.0f, &CachedValues[i]); }
 }
-
 
 namespace ImGui
 {
@@ -151,7 +150,7 @@ namespace ImGui
 		ImU32 colorAU32 = 0;
 		ImU32 colorBU32 = 0;
 
-		for (const auto mark : gradient->GetMarks())
+		for (const auto& mark : gradient->GetMarks())
 		{
 			if (!mark) continue;
 			const float from = prevX;
@@ -187,7 +186,7 @@ namespace ImGui
 												  colorAU32, colorBU32, colorBU32, colorAU32);
 			}
 
-			prevMark = mark;
+			prevMark = mark.get();
 		}
 
 		if (prevMark && prevMark->Position < 1.f)
@@ -226,7 +225,7 @@ namespace ImGui
 		ImU32 colorAU32 = 0;
 		ImU32 colorBU32 = 0;
 
-		for (const auto mark : gradient->GetMarks())
+		for (const auto& mark : gradient->GetMarks())
 		{
 			if (!mark) continue;
 			const float from = prevX;
@@ -262,7 +261,7 @@ namespace ImGui
 												  colorAU32, colorBU32, colorBU32, colorAU32);
 			}
 
-			prevMark = mark;
+			prevMark = mark.get();
 		}
 
 		if (prevMark && prevMark->Position < 1.f)
@@ -290,10 +289,10 @@ namespace ImGui
 		ImU32 colorAU32 = 0;
 		ImU32 colorBU32 = 0;
 
-		for (const auto mark : gradient->GetMarks())
+		for (const auto& mark : gradient->GetMarks())
 		{
 			if (!mark) continue;
-			if (!selectedMark) { selectedMark = mark; }
+			if (!selectedMark) { selectedMark = mark.get(); }
 
 			const float to = bar_pos.x + mark->Position * maxWidth;
 
@@ -332,7 +331,7 @@ namespace ImGui
 									ImVec2(to + 5, bar_pos.y + (height + 11)),
 									IM_COL32(0, 0, 0, 255), 1.0f, 1.0f);
 
-			if (selectedMark == mark)
+			if (selectedMark == mark.get())
 			{
 				drawList->AddTriangleFilled(ImVec2(to, bar_pos.y + (height - 3)),
 											ImVec2(to - 4, barBottom + 1),
@@ -354,13 +353,13 @@ namespace ImGui
 			{
 				if (IsMouseClicked(0))
 				{
-					selectedMark = mark;
-					draggingMark = mark;
+					selectedMark = mark.get();
+					draggingMark = mark.get();
 				}
 			}
 
 
-			prevMark = mark;
+			prevMark = mark.get();
 		}
 
 		SetCursorScreenPos(ImVec2(bar_pos.x, bar_pos.y + height + 20.0f));
@@ -404,52 +403,4 @@ namespace ImGui
 			ImVec4 newMarkCol;
 			gradient->GetColorAt(pos, &newMarkCol);
 
-			gradient->AddMark(pos, ImColor(newMarkCol.x, newMarkCol.y, newMarkCol.z, newMarkCol.w));
-		}
-
-		DrawGradientBar(gradient, barPos, maxWidth, GRADIENT_BAR_EDITOR_HEIGHT);
-		DrawGradientMarks(gradient, draggingMark, selectedMark, barPos, maxWidth, GRADIENT_BAR_EDITOR_HEIGHT);
-
-		if (!IsMouseDown(0) && draggingMark) { draggingMark = nullptr; }
-
-		if (IsMouseDragging(0) && draggingMark)
-		{
-			const float increment = GetIO().MouseDelta.x / maxWidth;
-			const bool insideZone = (GetIO().MousePos.x > barPos.x) &&
-				(GetIO().MousePos.x < barPos.x + maxWidth);
-
-			if (increment != 0.0f && insideZone)
-			{
-				draggingMark->Position += increment;
-				draggingMark->Position = ImClamp(draggingMark->Position, 0.0f, 1.0f);
-				gradient->RefreshCache();
-				modified = true;
-			}
-
-			const float diffY = GetIO().MousePos.y - barBottom;
-
-			if (diffY >= GRADIENT_MARK_DELETE_DIFFY)
-			{
-				gradient->RemoveMark(draggingMark);
-				draggingMark = nullptr;
-				selectedMark = nullptr;
-				modified = true;
-			}
-		}
-
-		if (!selectedMark && !gradient->GetMarks().empty()) { selectedMark = gradient->GetMarks().front(); }
-
-		if (selectedMark)
-		{
-			const bool colorModified = ColorPicker3(label, reinterpret_cast<float*>(&selectedMark->Color));
-
-			if (selectedMark && colorModified)
-			{
-				modified = true;
-				gradient->RefreshCache();
-			}
-		}
-
-		return modified;
-	}
-};
+			gradient->
