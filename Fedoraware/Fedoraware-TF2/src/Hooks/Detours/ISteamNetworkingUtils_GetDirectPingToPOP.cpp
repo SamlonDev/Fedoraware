@@ -1,6 +1,11 @@
 #include "../Hooks.h"
 
-const std::unordered_map<std::string, unsigned> DATA_CENTER_HASH
+// Using statements to reduce verbosity
+using DATA_CENTER_MAP = std::unordered_map<std::string, unsigned>;
+using DATA_CENTER_ITERATOR = DATA_CENTER_MAP::const_iterator;
+using FN = int(__fastcall*)(void*, void*, SteamNetworkingPOPID);
+
+const DATA_CENTER_MAP DATA_CENTER_HASH
 {
 	{"ams", DC_AMS},
 	{"fra", DC_FRA},
@@ -43,7 +48,7 @@ const std::unordered_map<std::string, unsigned> DATA_CENTER_HASH
 	{"syd", DC_SYD},
 };
 
-void POPID_ToString(SteamNetworkingPOPID popID, char* out)
+void POPID_ToString(SteamNetworkingPOPID popID, char* out) noexcept
 {
 	out[0] = static_cast<char>(popID >> 16);
 	out[1] = static_cast<char>(popID >> 8);
@@ -52,9 +57,13 @@ void POPID_ToString(SteamNetworkingPOPID popID, char* out)
 	out[4] = 0;
 }
 
-MAKE_HOOK(ISteamNetworkingUtils_GetDirectPingToPOP, Utils::GetVFuncPtr(g_SteamInterfaces.NetworkingUtils, 9), int, __fastcall,
-	void* ecx, void* edx, SteamNetworkingPOPID popID)
+int ISteamNetworkingUtils_GetDirectPingToPOP_Hook(void* ecx, void* edx, SteamNetworkingPOPID popID) __fastcall restrict override
 {
+	if (!ecx || !edx)
+	{
+		return Hook.Original<FN>()(ecx, edx, popID);
+	}
+
 	if (!Vars::Misc::Queueing::ForceRegions.Value)
 	{
 		return Hook.Original<FN>()(ecx, edx, popID);
@@ -63,12 +72,12 @@ MAKE_HOOK(ISteamNetworkingUtils_GetDirectPingToPOP, Utils::GetVFuncPtr(g_SteamIn
 	char popIDName[5];
 	POPID_ToString(popID, popIDName);
 
-	const auto pos = DATA_CENTER_HASH.find(popIDName);
-	if (pos != DATA_CENTER_HASH.end())
+	const DATA_CENTER_ITERATOR pos = DATA_CENTER_HASH.find(popIDName);
+	if (pos == DATA_CENTER_HASH.end())
 	{
-		const bool isAllowed = Vars::Misc::Queueing::ForceRegions.Value & pos->second;
-		return isAllowed ? 1 : 999999;
+		return Hook.Original<FN>()(ecx, edx, popID);
 	}
 
-	return Hook.Original<FN>()(ecx, edx, popID);
+	const bool isAllowed = Vars::Misc::Queueing::ForceRegions.Value & pos->second;
+	return isAllowed ? 1 : 999999;
 }
