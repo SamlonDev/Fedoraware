@@ -5,31 +5,39 @@
 
 bool CNoSpread::ShouldRun(CBaseEntity* pLocal, CBaseCombatWeapon* pWeapon)
 {
-	if (!Vars::Aimbot::General::NoSpread.Value)
-		return false;
+    if (!Vars::Aimbot::General::NoSpread.Value)
+        return false;
 
-	if (!pLocal || !pWeapon
-		|| !pLocal->IsAlive()
-		|| pLocal->IsTaunting()
-		|| pLocal->IsBonked()
-		|| pLocal->m_bFeignDeathReady()
-		|| pLocal->IsCloaked()
-		|| pLocal->IsInBumperKart()
-		|| pLocal->IsAGhost())
-	{
-		return false;
-	}
+    if (!pLocal || !pWeapon)
+        return false;
 
-	return true;
+    if (!pLocal->IsAlive()
+        || pLocal->IsTaunting()
+        || pLocal->IsBonked()
+        || pLocal->m_bFeignDeathReady()
+        || pLocal->IsCloaked()
+        || pLocal->IsInBumperKart()
+        || pLocal->IsAGhost())
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void CNoSpread::Run(CUserCmd* pCmd)
 {
-	const auto pLocal = g_EntityCache.GetLocal();
-	const auto pWeapon = g_EntityCache.GetWeapon();
-	if (!ShouldRun(pLocal, pWeapon))
-		return;
+    const auto pLocal = g_EntityCache.GetLocal();
+    if (!pLocal)
+        return;
 
-	F::NoSpreadHitscan.Run(pCmd, pLocal, pWeapon);
-	F::NoSpreadProjectile.Run(pCmd, pLocal, pWeapon);
+    const auto pWeapon = g_EntityCache.GetWeapon();
+    if (!pWeapon)
+        return;
+
+    if (!ShouldRun(pLocal, pWeapon))
+        return;
+
+    F::NoSpreadHitscan.Run(pCmd, pLocal, pWeapon);
+    F::NoSpreadProjectile.Run(pCmd, pLocal, pWeapon);
 }
