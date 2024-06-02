@@ -1,56 +1,11 @@
-//
-//  imgui_color_gradient.h
-//  imgui extension
-//
-//  Created by David Gallardo on 11/06/16.
-
-/*
-
- Usage:
-
- ::GRADIENT DATA::
- ImGradient gradient;
-
- ::BUTTON::
- if(ImGui::GradientButton(&gradient))
- {
-    //set show editor flag to true/false
- }
-
- ::EDITOR::
- static ImGradientMark* draggingMark = nullptr;
- static ImGradientMark* selectedMark = nullptr;
-
- bool updated = ImGui::GradientEditor(&gradient, draggingMark, selectedMark);
-
- ::GET A COLOR::
- float color[3];
- gradient.getColorAt(0.3f, color); //position from 0 to 1
-
- ::MODIFY GRADIENT WITH CODE::
- gradient.getMarks().clear();
- gradient.addMark(0.0f, ImColor(0.2f, 0.1f, 0.0f));
- gradient.addMark(0.7f, ImColor(120, 200, 255));
-
- ::WOOD BROWNS PRESET::
- gradient.getMarks().clear();
- gradient.addMark(0.0f, ImColor(0xA0, 0x79, 0x3D));
- gradient.addMark(0.2f, ImColor(0xAA, 0x83, 0x47));
- gradient.addMark(0.3f, ImColor(0xB4, 0x8D, 0x51));
- gradient.addMark(0.4f, ImColor(0xBE, 0x97, 0x5B));
- gradient.addMark(0.6f, ImColor(0xC8, 0xA1, 0x65));
- gradient.addMark(0.7f, ImColor(0xD2, 0xAB, 0x6F));
- gradient.addMark(0.8f, ImColor(0xDC, 0xB5, 0x79));
- gradient.addMark(1.0f, ImColor(0xE6, 0xBF, 0x83));
-
- */
-
+// imgui_color_gradient.h
 #pragma once
 
 #include "imgui.h"
-
 #include <list>
 #include <array>
+#include <memory>
+#include <algorithm>
 
 struct ImGradientMark {
 	ImVec4 Color;
@@ -59,31 +14,115 @@ struct ImGradientMark {
 
 class ImGradient {
 public:
-	ImGradient();
-	~ImGradient();
+	ImGradient() = default;
+	~ImGradient() = default;
 
-	void GetColorAt(float position, ImVec4* color) const;
-	void AddMark(float position, ImColor color);
-	void RemoveMark(ImGradientMark* mark);
-	void ClearMarks();
-	void RefreshCache();
-	std::list<ImGradientMark*>& GetMarks() { return Marks; }
+	void GetColorAt(float position, ImVec4* color) const noexcept;
+	void AddMark(float position, ImColor color) noexcept;
+	void RemoveMark(const ImGradientMark* mark) noexcept;
+	void ClearMarks() noexcept;
+	void RefreshCache() noexcept;
+	std::list<ImGradientMark>& GetMarks() noexcept { return Marks; }
 
-	void ComputeColorAt(float position, ImVec4* color) const;
-	std::list<ImGradientMark*> Marks;
-	std::array<ImVec4, 256> CachedValues;
+	void ComputeColorAt(float position, ImVec4* color) const noexcept;
+
+private:
+	std::list<ImGradientMark> Marks;
+	mutable std::array<ImVec4, 256> CachedValues;
 };
 
-namespace ImGui
-{
-	void GradientRect(ImGradient* gradient,
-	                  const struct ImVec2& bar_pos,
-	                  float maxWidth,
-	                  float height);
+namespace ImGui {
 
-	bool GradientButton(ImGradient* gradient);
+void GradientRect(ImGradient* gradient, const ImVec2& bar_pos, float maxWidth, float height);
 
-	bool GradientEditor(const char* label, ImGradient* gradient,
-	                    ImGradientMark*& draggingMark,
-	                    ImGradientMark*& selectedMark);
+bool GradientButton(ImGradient* gradient);
+
+bool GradientEditor(const char* label, ImGradient* gradient,
+	std::unique_ptr<ImGradientMark>& draggingMark,
+	std::unique_ptr<ImGradientMark>& selectedMark);
+
+} // namespace ImGui
+
+
+// imgui_color_gradient.cpp
+#include "imgui_color_gradient.h"
+
+void ImGradient::GetColorAt(float position, ImVec4* color) const noexcept {
+	ComputeColorAt(position, color);
+}
+
+void ImGradient::AddMark(float position, ImColor color) noexcept {
+	Marks.emplace_back(position, color);
+	RefreshCache();
+}
+
+void ImGradient::RemoveMark(const ImGradientMark* mark) noexcept {
+	Marks.remove_if([mark](const ImGradientMark& m) { return &m == mark; });
+	RefreshCache();
+}
+
+void ImGradient::ClearMarks() noexcept {
+	Marks.clear();
+	RefreshCache();
+}
+
+void ImGradient::ComputeColorAt(float position, ImVec4* color) const noexcept {
+	// Implementation
+}
+
+void ImGradient::RefreshCache() noexcept {
+	// Implementation
+}
+
+void ImGui::GradientRect(ImGradient* gradient, const ImVec2& bar_pos, float maxWidth, float height) {
+	// Implementation
+}
+
+bool ImGui::GradientButton(ImGradient* gradient) {
+	// Implementation
+}
+
+bool ImGui::GradientEditor(const char* label, ImGradient* gradient,
+	std::unique_ptr<ImGradientMark>& draggingMark,
+	std::unique_ptr<ImGradientMark>& selectedMark) {
+	bool updated = false;
+
+	if (ImGui::Begin(label, nullptr, ImGuiWindowFlags_NoMove)) {
+		if (draggingMark && ImGui::IsWindowFocused() && ImGui::IsMouseDown(0)) {
+			float mouseX = ImGui::GetIO().MousePos.x - bar_pos.x;
+			float markPosition = mouseX / maxWidth;
+			draggingMark->Position = std::clamp(markPosition, 0.0f, 1.0f);
+			updated = true;
+		}
+
+		if (ImGui::IsMouseReleased(0) && draggingMark) {
+			selectedMark = std::move(draggingMark);
+			draggingMark.reset();
+			updated = true;
+		}
+
+		// Draw gradient
+		ImGui::SetCursorScreenPos(bar_pos);
+		ImGui::InvisibleButton("gradient", ImVec2(maxWidth, height));
+		ImVec4 col;
+		gradient->GetColorAt(ImGui::GetCursorScreenPos().x / maxWidth, &col);
+		ImGui::GetWindowDrawList()->AddRectFilledMultiColor(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(),
+			col, col, ImColor(0, 0, 0, 0), ImColor(0, 0, 0, 0));
+
+		// Draw marks
+		std::for_each(gradient->GetMarks().begin(), gradient->GetMarks().end(),
+			[&](const ImGradientMark& mark) {
+				float markX = mark.Position * maxWidth;
+				ImGui::GetWindowDrawList()->AddLine(ImVec2(markX, 0), ImVec2(markX, height), ImColor(0, 0, 0));
+			});
+
+		// Draw selected mark
+		if (selectedMark) {
+			float markX = selectedMark->Position * maxWidth;
+			ImGui::GetWindowDrawList()->AddCircle(ImVec2(markX, height / 2), 4, ImColor(0, 0, 0));
+		}
+	}
+	ImGui::End();
+
+	return updated;
 }
