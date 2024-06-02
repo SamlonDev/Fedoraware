@@ -1,10 +1,12 @@
 #include "../Hooks.h"
 
-//	xref C_BaseEntity_BaseInterpolatePart1
-MAKE_HOOK(C_BaseEntity_Interpolate, S::CBaseEntity_Interpolate(), bool, __fastcall,
-	void* ecx, void* edx, float currentTime)
+// Xref: C_BaseEntity_BaseInterpolatePart1
+HOOK_DECLARE(bool, C_BaseEntity_Interpolate, void* ecx, void* edx, float currentTime);
+
+bool Hook_C_BaseEntity_Interpolate(void* ecx, void* edx, float currentTime)
 {
-	return Vars::Visuals::Removals::Interpolation.Value
-		? true
-		: Hook.Original<FN>()(ecx, edx, currentTime);
+	if (Vars::Visuals::Removals::Interpolation.Value)
+		return true;
+
+	return HOOK_ORIGINAL(C_BaseEntity_Interpolate)(ecx, edx, currentTime);
 }
