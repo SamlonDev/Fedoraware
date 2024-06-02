@@ -2,6 +2,7 @@
 
 #include "../../Feature.h"
 
+// Represents data about a player.
 struct PlayerData
 {
 	Vec3 m_vecOrigin = {};
@@ -53,6 +54,8 @@ struct PlayerData
 	int m_nPlayerCondEx4 = 0;
 	int _condition_bits = 0;
 };
+
+// Represents data about a player that is stored and restored during movement simulation.
 struct PlayerStorage
 {
 	CBaseEntity* m_pPlayer = nullptr;
@@ -65,8 +68,33 @@ struct PlayerStorage
 
 	bool m_bFailed = false;
 	bool m_bInitFailed = false;
+
+	// Clears the PredictionLines deque.
+	void ClearPredictionLines()
+	{
+		PredictionLines.clear();
+	}
+
+	// Updates the m_flAverageYaw variable.
+	void UpdateAverageYaw()
+	{
+		// Calculate the average yaw here.
+	}
+
+	// Constructor
+	PlayerStorage()
+	{
+		ClearPredictionLines();
+	}
+
+	// Destructor
+	~PlayerStorage()
+	{
+		// Deallocate memory here if necessary.
+	}
 };
 
+// Represents a movement simulation.
 class CMovementSimulation
 {
 private:
@@ -85,11 +113,29 @@ private:
 	std::map<int, std::deque<std::pair<Vec3, float>>> mVelocities;
 
 public:
+	// Fills the mVelocities map with data.
 	void FillVelocities();
 
+	// Initializes the movement simulation.
 	bool Initialize(CBaseEntity* pPlayer, PlayerStorage& playerStorageOut, bool useHitchance = true, bool cancelStrafe = false);
+
+	// Runs a tick of the movement simulation.
 	void RunTick(PlayerStorage& playerStorage);
+
+	// Restores the player's state after the movement simulation.
 	void Restore(PlayerStorage& playerStorage);
+
+	// Checks if the player is on the ground.
+	bool IsPlayerOnGround(const PlayerData& playerData)
+	{
+		// Check if the player is on the ground here.
+	}
+
+	// Updates the m_flFallVelocity variable in the player's data.
+	void UpdateFallVelocity(PlayerData& playerData)
+	{
+		// Update the fall velocity here.
+	}
 };
 
 ADD_FEATURE(CMovementSimulation, MoveSim)
