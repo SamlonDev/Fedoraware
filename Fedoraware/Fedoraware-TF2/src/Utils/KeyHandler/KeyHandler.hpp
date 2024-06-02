@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <chrono>
 
+constexpr int MAX_KEYS = 256;
+
 struct KeyStorage
 {
 	bool bIsDown = false;
@@ -18,29 +20,27 @@ class CKeyHandler
 	std::unordered_map<int, KeyStorage> StorageMap;
 
 public:
-	void StoreKey(int iKey, KeyStorage* pStorage = nullptr)
+	CKeyHandler()
 	{
-		if (!pStorage)
-			pStorage = &StorageMap[iKey];
+		StorageMap.reserve(MAX_KEYS);
+	}
+
+	void StoreKey(int iKey, KeyStorage* pStorage)
+	{
+		if (!pStorage || StorageMap.find(iKey) == StorageMap.end())
+			return;
 
 		// down
 		bool bDown = GetAsyncKeyState(iKey) & 0x8000;
 		if (bDown)
-		{ //Utils::IsGameWindowInFocus()
-			static HWND hwGame = nullptr;
-
-			while (!hwGame)
-			{
-				hwGame = FindWindowW(nullptr, L"Team Fortress 2");
-				if (!hwGame)
-					bDown = false;
-			}
+		{
+			HWND hwGame = FindWindowW(nullptr, L"Team Fortress 2");
+			if (!hwGame)
+				return;
 
 			if (GetForegroundWindow() != hwGame)
 				bDown = false;
 		}
-		if (!iKey)
-			bDown = false;
 
 		// pressed
 		const bool bPressed = bDown && !pStorage->bIsDown;
@@ -61,22 +61,28 @@ public:
 	}
 
 	// Is the button currently down?
-	bool Down(int iKey, const bool bStore = true, KeyStorage* pStorage = nullptr)
+	bool Down(int iKey, bool bStore = true, KeyStorage* pStorage = nullptr)
 	{
 		if (!pStorage)
 			pStorage = &StorageMap[iKey];
 
+		if (iKey < 0 || iKey >= MAX_KEYS)
+			return false;
+
 		if (bStore)
 			StoreKey(iKey, pStorage);
-		
+
 		return pStorage->bIsDown;
 	}
 
 	// Was the button just pressed? This will only be true once.
-	bool Pressed(int iKey, const bool bStore = true, KeyStorage* pStorage = nullptr)
+	bool Pressed(int iKey, bool bStore = true, KeyStorage* pStorage = nullptr)
 	{
 		if (!pStorage)
 			pStorage = &StorageMap[iKey];
+
+		if (iKey < 0 || iKey >= MAX_KEYS)
+			return false;
 
 		if (bStore)
 			StoreKey(iKey, pStorage);
@@ -85,10 +91,13 @@ public:
 	}
 
 	// Was the button double clicked? This will only be true once.
-	bool Double(int iKey, const bool bStore = true, KeyStorage* pStorage = nullptr)
+	bool Double(int iKey, bool bStore = true, KeyStorage* pStorage = nullptr)
 	{
 		if (!pStorage)
 			pStorage = &StorageMap[iKey];
+
+		if (iKey < 0 || iKey >= MAX_KEYS)
+			return false;
 
 		if (bStore)
 			StoreKey(iKey, pStorage);
@@ -97,15 +106,24 @@ public:
 	}
 
 	// Was the button just released? This will only be true once.
-	bool Released(int iKey, const bool bStore = true, KeyStorage* pStorage = nullptr)
+	bool Released(int iKey, bool bStore = true, KeyStorage* pStorage = nullptr)
 	{
 		if (!pStorage)
 			pStorage = &StorageMap[iKey];
+
+		if (iKey < 0 || iKey >= MAX_KEYS)
+			return false;
 
 		if (bStore)
 			StoreKey(iKey, pStorage);
 
 		return pStorage->bIsReleased;
+	}
+
+	void Reset()
+	{
+		StorageMap.clear();
+		StorageMap.reserve(MAX_KEYS);
 	}
 };
 
