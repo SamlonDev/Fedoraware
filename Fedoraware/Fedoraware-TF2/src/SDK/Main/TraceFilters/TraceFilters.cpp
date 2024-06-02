@@ -1,108 +1,138 @@
 #include "TraceFilters.h"
 #include "../../SDK.h"
 
-bool CTraceFilterHitscan::ShouldHitEntity(void* pEntityHandle, int nContentsMask)
+// Base class for all trace filters
+class CTraceFilter
 {
-	auto pEntity = reinterpret_cast<CBaseEntity*>(pEntityHandle);
-	if (!pEntity || pEntityHandle == pSkip)
-		return false;
+public:
+    virtual ETraceType GetTraceType() const = 0;
+};
 
-	auto pLocal = g_EntityCache.GetLocal();
-	auto pWeapon = g_EntityCache.GetWeapon();
-
-	const int iTargetTeam = pEntity->m_iTeamNum(), iLocalTeam = pLocal ? pLocal->m_iTeamNum() : iTargetTeam;
-	bool bSniperRifle = false;
-	if (pLocal && pLocal == pSkip && pWeapon)
-	{
-		switch (pWeapon->GetWeaponID())
-		{
-		case TF_WEAPON_SNIPERRIFLE:
-		case TF_WEAPON_SNIPERRIFLE_CLASSIC:
-		case TF_WEAPON_SNIPERRIFLE_DECAP:
-			bSniperRifle = true;
-		}
-	}
-
-	switch (pEntity->GetClassID())
-	{
-	case ETFClassID::CTFAmmoPack:
-	case ETFClassID::CFuncAreaPortalWindow:
-	case ETFClassID::CFuncRespawnRoomVisualizer:
-	case ETFClassID::CSniperDot:
-	case ETFClassID::CTFReviveMarker: return false;
-	case ETFClassID::CTFMedigunShield:
-		if (iTargetTeam == iLocalTeam)
-			return false;
-		break;
-	case ETFClassID::CTFPlayer:
-	case ETFClassID::CObjectSentrygun:
-	case ETFClassID::CObjectDispenser:
-	case ETFClassID::CObjectTeleporter:
-		if (bSniperRifle && iTargetTeam == iLocalTeam)
-			return false;
-	}
-
-	return true;
-}
-ETraceType CTraceFilterHitscan::GetTraceType() const
+// Trace filter for hitscan weapons
+class CTraceFilterHitscan : public CTraceFilter
 {
-	return TRACE_EVERYTHING;
-}
+public:
+    bool ShouldHitEntity(void* pEntityHandle, int nContentsMask) const
+    {
+        const auto pEntity = reinterpret_cast<CBaseEntity*>(pEntityHandle);
+        if (!pEntity)
+            return false;
 
-bool CTraceFilterProjectile::ShouldHitEntity(void* pEntityHandle, int nContentsMask)
+        const auto pLocal = g_EntityCache.GetLocal();
+        const auto pWeapon = g_EntityCache.GetWeapon();
+        if (!pLocal || !pWeapon)
+            return false;
+
+        const auto iTargetTeam = pEntity->m_iTeamNum();
+        const auto iLocalTeam = pLocal->m_iTeamNum();
+        const bool bSniperRifle = IsSniperRifle(pWeapon);
+
+        switch (pEntity->GetClassID())
+        {
+        case ETFClassID::CTFAmmoPack:
+        case ETFClassID::CFuncAreaPortalWindow:
+        case ETFClassID::CFuncRespawnRoomVisualizer:
+        case ETFClassID::CSniperDot:
+        case ETFClassID::CTFReviveMarker: return false;
+        case ETFClassID::CTFMedigunShield:
+            if (iTargetTeam == iLocalTeam)
+                return false;
+            break;
+        case ETFClassID::CTFPlayer:
+        case ETFClassID::CObjectSentrygun:
+        case ETFClassID::CObjectDispenser:
+        case ETFClassID::CObjectTeleporter:
+            if (bSniperRifle && iTargetTeam == iLocalTeam)
+                return false;
+        }
+
+        return true;
+    }
+
+    ETraceType GetTraceType() const override
+    {
+        return TRACE_EVERYTHING;
+    }
+
+private:
+    static bool IsSniperRifle(CBaseCombatWeapon* pWeapon)
+    {
+        const auto weaponId = pWeapon->GetWeaponID();
+        return weaponId == TF_WEAPON_SNIPERRIFLE ||
+               weaponId == TF_WEAPON_SNIPERRIFLE_CLASSIC ||
+               weaponId == TF_WEAPON_SNIPERRIFLE_DECAP;
+    }
+};
+
+// Trace filter for projectiles
+class CTraceFilterProjectile : public CTraceFilter
 {
-	auto pEntity = reinterpret_cast<CBaseEntity*>(pEntityHandle);
-	if (!pEntity || pEntityHandle == pSkip)
-		return false;
+public:
+    bool ShouldHitEntity(void* pEntityHandle, int nContentsMask) const
+    {
+        const auto pEntity = reinterpret_cast<CBaseEntity*>(pEntityHandle);
+        if (!pEntity)
+            return false;
 
-	auto pLocal = g_EntityCache.GetLocal();
-	auto pWeapon = g_EntityCache.GetWeapon();
+        const auto pLocal = g_EntityCache.GetLocal();
+        const auto pWeapon = g_EntityCache.GetWeapon();
+        if (!pLocal || !pWeapon)
+            return false;
 
-	const int iTargetTeam = pEntity->m_iTeamNum(), iLocalTeam = pLocal ? pLocal->m_iTeamNum() : iTargetTeam;
-	const bool bCrossbow = (pLocal && pLocal == pSkip && pWeapon) ? pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW : false;
+        const auto iTargetTeam = pEntity->m_iTeamNum();
+        const auto iLocalTeam = pLocal->m_iTeamNum();
+        const bool bCrossbow = pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW;
 
-	switch (pEntity->GetClassID())
-	{
-	case ETFClassID::CBaseEntity:
-	case ETFClassID::CBaseDoor:
-	case ETFClassID::CDynamicProp:
-	case ETFClassID::CPhysicsProp:
-	case ETFClassID::CObjectCartDispenser:
-	case ETFClassID::CFuncTrackTrain:
-	case ETFClassID::CFuncConveyor:
-	case ETFClassID::CObjectSentrygun:
-	case ETFClassID::CObjectDispenser:
-	case ETFClassID::CObjectTeleporter: return true;
-	case ETFClassID::CTFPlayer: return bCrossbow ? true : iTargetTeam != iLocalTeam;
-	}
+        switch (pEntity->GetClassID())
+        {
+        case ETFClassID::CBaseEntity:
+        case ETFClassID::CBaseDoor:
+        case ETFClassID::CDynamicProp:
+        case ETFClassID::CPhysicsProp:
+        case ETFClassID::CObjectCartDispenser:
+        case ETFClassID::CFuncTrackTrain:
+        case ETFClassID::CFuncConveyor:
+        case ETFClassID::CObjectSentrygun:
+        case ETFClassID::CObjectDispenser:
+        case ETFClassID::CObjectTeleporter: return true;
+        case ETFClassID::CTFPlayer: return bCrossbow ? true : iTargetTeam != iLocalTeam;
+        }
 
-	return false;
-}
-ETraceType CTraceFilterProjectile::GetTraceType() const
+        return false;
+    }
+
+    ETraceType GetTraceType() const override
+    {
+        return TRACE_EVERYTHING;
+    }
+};
+
+// Trace filter for world and props only
+class CTraceFilterWorldAndPropsOnly : public CTraceFilter
 {
-	return TRACE_EVERYTHING;
-}
+public:
+    bool ShouldHitEntity(void* pEntityHandle, int nContentsMask) const
+    {
+        const auto pEntity = reinterpret_cast<CBaseEntity*>(pEntityHandle);
+        if (!pEntity)
+            return false;
 
-bool CTraceFilterWorldAndPropsOnly::ShouldHitEntity(void* pEntityHandle, int nContentsMask)
-{
-	auto pEntity = reinterpret_cast<CBaseEntity*>(pEntityHandle);
-	if (!pEntity || pEntityHandle == pSkip)
-		return false;
+        switch (pEntity->GetClassID())
+        {
+        case ETFClassID::CBaseEntity:
+        case ETFClassID::CBaseDoor:
+        case ETFClassID::CDynamicProp:
+        case ETFClassID::CPhysicsProp:
+        case ETFClassID::CObjectCartDispenser:
+        case ETFClassID::CFuncTrackTrain:
+        case ETFClassID::CFuncConveyor: return true;
+        }
 
-	switch (pEntity->GetClassID())
-	{
-	case ETFClassID::CBaseEntity:
-	case ETFClassID::CBaseDoor:
-	case ETFClassID::CDynamicProp:
-	case ETFClassID::CPhysicsProp:
-	case ETFClassID::CObjectCartDispenser:
-	case ETFClassID::CFuncTrackTrain:
-	case ETFClassID::CFuncConveyor: return true;
-	}
+        return false;
+    }
 
-	return false;
-}
-ETraceType CTraceFilterWorldAndPropsOnly::GetTraceType() const
-{
-	return TRACE_EVERYTHING;
-}
+    ETraceType GetTraceType() const override
+    {
+        return TRACE_EVERYTHING;
+    }
+};
