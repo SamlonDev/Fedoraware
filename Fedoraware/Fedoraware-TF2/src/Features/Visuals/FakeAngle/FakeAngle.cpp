@@ -1,36 +1,45 @@
 #include "FakeAngle.h"
-
 #include "../../PacketManip/AntiAim/AntiAim.h"
 
 void CFakeAngle::Run()
 {
-	const auto& pLocal = g_EntityCache.GetLocal();
-	if (!pLocal || !pLocal->IsAlive() || pLocal->IsAGhost())
-		return;
+    const auto pLocal = g_EntityCache.GetLocal();
+    if (!pLocal || !pLocal->IsAlive() || pLocal->IsAGhost())
+    {
+        // Skip processing if there's no local player or they're not alive or they're a ghost
+        return;
+    }
 
-	const auto& pAnimState = pLocal->GetAnimState();
-	if (!pAnimState)
-		return;
+    auto pAnimState = pLocal->GetAnimState();
+    if (!pAnimState)
+    {
+        // Skip processing if there's no animation state
+        return;
+    }
 
-	Math::Clamp(F::AntiAim.vFakeAngles.x, -89.f, 89.f);
+    // Clamp the pitch value to -89 to 89 degrees
+    Math::Clamp(F::AntiAim.vFakeAngles.x, -89.f, 89.f);
 
-	float flOldFrameTime = I::GlobalVars->frametime;
-	int nOldSequence = pLocal->m_nSequence();
-	float flOldCycle = pLocal->m_flCycle();
-	auto pOldPoseParams = pLocal->m_flPoseParameter();
-	char pOldAnimState[sizeof(CTFPlayerAnimState)] = {};
-	memcpy(pOldAnimState, pAnimState, sizeof(CTFPlayerAnimState));
+    // Save the old variable values
+    const float flOldFrameTime = I::GlobalVars->frametime;
+    const int nOldSequence = pLocal->m_nSequence();
+    const float flOldCycle = pLocal->m_flCycle();
+    CTFPlayerAnimState pOldAnimState = *pAnimState;
+    std::array<float, MAX_STUDIO_BONE> pOldPoseParams = pLocal->m_flPoseParameter();
 
-	I::GlobalVars->frametime = 0.f;
-	pAnimState->m_flCurrentFeetYaw = F::AntiAim.vFakeAngles.y;
-	pAnimState->m_flEyeYaw = F::AntiAim.vFakeAngles.y;
-	pAnimState->Update(F::AntiAim.vFakeAngles.y, F::AntiAim.vFakeAngles.x);
+    // Set the new variable values
+    I::GlobalVars->frametime = 0.f;
+    pAnimState->m_flCurrentFeetYaw = F::AntiAim.vFakeAngles.y;
+    pAnimState->m_flEyeYaw = F::AntiAim.vFakeAngles.y;
+    pAnimState->Update(F::AntiAim.vFakeAngles.y, F::AntiAim.vFakeAngles.x);
 
-	BonesSetup = pLocal->SetupBones(BoneMatrix, 128, BONE_USED_BY_ANYTHING, I::GlobalVars->curtime);
+    // Set up the bones
+    auto BonesSetup = pLocal->SetupBones(BoneMatrix, 128, BONE_USED_BY_ANYTHING, I::GlobalVars->curtime);
 
-	I::GlobalVars->frametime = flOldFrameTime;
-	pLocal->m_nSequence() = nOldSequence;
-	pLocal->m_flCycle() = flOldCycle;
-	pLocal->m_flPoseParameter() = pOldPoseParams;
-	memcpy(pAnimState, pOldAnimState, sizeof(CTFPlayerAnimState));
+    // Restore the old variable values
+    I::GlobalVars->frametime = flOldFrameTime;
+    pLocal->m_nSequence() = nOldSequence;
+    pLocal->m_flCycle() = flOldCycle;
+    pLocal->m_flPoseParameter() = pOldPoseParams;
+    *pAnimState = pOldAnimState;
 }
