@@ -1,289 +1,254 @@
-#pragma once
-#include "../../Utils/Utils.h"
+#ifndef MY_HEADERS_H
+#define MY_HEADERS_H
+
+#include <cstdint>
+#include <string>
+#include <vector>
+#include <memory>
+#include <limits>
+#include <algorithm>
+#include <format>
+#include <cmath>
+#include <type_traits>
+
+#include "Utils.h"
 #include "Const.h"
 
-struct Rect_t { int x, y, w, h; };
-struct model_t;
+#if !defined(M_PI)
+#define M_PI 3.14159265358979323846
+#endif
 
-class IClientRenderable;
-typedef unsigned short ModelInstanceHandle_t;
-struct StudioData_t;
-using StudioDecalHandle_t = void*;
+#if !defined(M_PI_F)
+#define M_PI_F static_cast<float>(M_PI)
+#endif
 
-struct mstudiobbox_t
-{
-	int					bone;
-	int					group;
-	Vec3				bbmin;
-	Vec3				bbmax;
-	int					szhitboxnameindex;
-	Vec3 angle;
-	float m_radius;
-	uint8_t _padding[0x10];
-};
+#if !defined(M_PI_2)
+#define M_PI_2 static_cast<float>(M_PI / 2.0)
+#endif
 
+#if !defined(M_PI_4)
+#define M_PI_4 static_cast<float>(M_PI / 4.0)
+#endif
 
-struct mstudiohitboxset_t
-{
-	int sznameindex;
-	inline char* const name(void) const { return ((char*)this) + sznameindex; }
-	int numhitboxes;
-	int hitboxindex;
-	mstudiobbox_t* hitbox(int i) const { return (mstudiobbox_t*)(((BYTE*)this) + hitboxindex) + i; };
-};
+#if !defined(M_E)
+#define M_E 2.71828182845904523536
+#endif
 
-struct mstudiobone_t
-{
-	int					sznameindex;
-	inline char *const pszName(void) const { return ((char *)this) + sznameindex; }
-	int		 			parent;
-	int					bonecontroller[6];
-	Vec3				pos;
-	float				quat[4];
-	Vec3				rot;
-	Vec3				posscale;
-	Vec3				rotscale;
-	float				poseToBone[3][4];
-	float				qAlignment[4];
-	int					flags;
-	int					proctype;
-	int					procindex;
-	mutable int			physicsbone;
-	inline void *pProcedure() const { if (procindex == 0) return NULL; else return  (void *)(((byte *)this) + procindex); };
-	int					surfacepropidx;
-	inline char *const pszSurfaceProp(void) const { return ((char *)this) + surfacepropidx; }
-	int					contents;
-	int					unused[8];
+#if !defined(M_E_F)
+#define M_E_F static_cast<float>(M_E)
+#endif
 
-	mstudiobone_t() {}
-private:
-	// No copy constructors allowed
-	mstudiobone_t(const mstudiobone_t &vOther);
-};
+#if !defined(M_SQRT2)
+#define M_SQRT2 1.41421356237309504880
+#endif
 
-struct studiohdr_t
-{
-	int id;
-	int version;
-	int checksum;
-	char name[64];
-	int length;
-	Vec3 eyeposition;
-	Vec3 illumposition;
-	Vec3 hull_min;
-	Vec3 hull_max;
-	Vec3 view_bbmin;
-	Vec3 view_bbmax;
-	int flags;
-	int numbones;
-	int boneindex;
-	inline mstudiobone_t *GetBone(int i) const { return (mstudiobone_t *)(((byte *)this) + boneindex) + i; };
+#if !defined(M_SQRT2_F)
+#define M_SQRT2_F static_cast<float>(M_SQRT2)
+#endif
 
-	int numbonecontrollers;
-	int bonecontrollerindex;
-	int numhitboxsets;
-	int hitboxsetindex;
+#if !defined(M_SQRT1_2)
+#define M_SQRT1_2 0.70710678118654752440
+#endif
 
-	mstudiohitboxset_t *GetHitboxSet(int i) const
-	{
-		return (mstudiohitboxset_t *)(((byte *)this) + hitboxsetindex) + i;
-	}
+#if !defined(M_SQRT1_2_F)
+#define M_SQRT1_2_F static_cast<float>(M_SQRT1_2)
+#endif
 
-	inline mstudiobbox_t *GetHitbox(int i, int set) const
-	{
-		mstudiohitboxset_t const *s = GetHitboxSet(set);
+#if !defined(M_LN2)
+#define M_LN2 0.69314718055994530942
+#endif
 
-		if (!s)
-			return NULL;
+#if !defined(M_LN2_F)
+#define M_LN2_F static_cast<float>(M_LN2)
+#endif
 
-		return s->hitbox(i);
-	}
+#if !defined(M_LN10)
+#define M_LN10 2.30258509299434308761
+#endif
 
-	inline int GetHitboxCount(int set) const
-	{
-		mstudiohitboxset_t const *s = GetHitboxSet(set);
+#if !defined(M_LN10_F)
+#define M_LN10_F static_cast<float>(M_LN10)
+#endif
 
-		if (!s)
-			return 0;
+#if !defined(M_LOG2E)
+#define M_LOG2E 1.44269504088896340736
+#endif
 
-		return s->numhitboxes;
-	}
+#if !defined(M_LOG2E_F)
+#define M_LOG2E_F static_cast<float>(M_LOG2E)
+#endif
 
-	int numlocalanim;
-	int localanimindex;
-	int numlocalseq;
-	int localseqindex;
-	mutable int activitylistversion;
-	mutable int eventsindexed;
-	int numtextures;
-	int textureindex;
-	int numcdtextures;
-	int cdtextureindex;
-	int numskinref;
-	int numskinfamilies;
-	int skinindex;
-	int numbodyparts;
-	int bodypartindex;
-	int numlocalattachments;
-	int localattachmentindex;
-	int numlocalnodes;
-	int localnodeindex;
-	int localnodenameindex;
-	int numflexdesc;
-	int flexdescindex;
-	int numflexcontrollers;
-	int flexcontrollerindex;
-	int numflexrules;
-	int flexruleindex;
-	int numikchains;
-	int ikchainindex;
-	int nummouths;
-	int mouthindex;
-	int numlocalposeparameters;
-	int localposeparamindex;
-	int surfacepropindex;
-	int keyvalueindex;
-	int keyvaluesize;
-	int numlocalikautoplaylocks;
-	int localikautoplaylockindex;
-	float mass;
-	int contents;
-	int numincludemodels;
-	int includemodelindex;
-	mutable void *virtualModel;
-	int szanimblocknameindex;
-	int numanimblocks;
-	int animblockindex;
-	mutable void *animblockModel;
-	int bonetablebynameindex;
-	void *pVertexBase;
-	void *pIndexBase;
-	byte constdirectionallightdot;
-	byte rootLOD;
-	byte numAllowedRootLODs;
-	byte unused[1];
-	int unused4;
-	int numflexcontrollerui;
-	int	flexcontrolleruiindex;
-	float flVertAnimFixedPointScale;
-	int	unused3[1];
-	int	studiohdr2index;
-	int	unused2[1];
-};
+#if !defined(M_LOG10E)
+#define M_LOG10E 0.43429448190325182765
+#endif
 
-struct Ray_t
-{
-	VectorAligned vaStartP;
-	VectorAligned vaDelta;
-	VectorAligned vaStartOffset;
-	VectorAligned vaExtents;
+#if !defined(M_LOG10E_F)
+#define M_LOG10E_F static_cast<float>(M_LOG10E)
+#endif
 
-	bool IsRay;
-	bool IsSwept;
+#if !defined(M_SQRT1_2)
+#define M_SQRT1_2 0.70710678118654752440
+#endif
 
-	void Init(const Vec3 &source, const Vec3 &destination)
-	{
-		vaDelta = destination - source;
+#if !defined(M_SQRT1_2_F)
+#define M_SQRT1_2_F static_cast<float>(M_SQRT1_2)
+#endif
 
-		IsSwept = (vaDelta.LengthSqr() != 0);
+#if !defined(M_2PI)
+#define M_2PI 6.28318530717958647692
+#endif
 
-		vaExtents.Set();
-		IsRay = true;
+#if !defined(M_2PI_F)
+#define M_2PI_F static_cast<float>(M_2PI)
+#endif
 
-		vaStartOffset.Set();
-		vaStartP = source;
-	}
+#if !defined(M_2PI_4)
+#define M_2PI_4 static_cast<float>(M_2PI / 4.0)
+#endif
 
-	void Init(const Vec3& source, const Vec3& destination, const Vec3& min, const Vec3& max)
-	{
-		vaDelta = destination - source;
+#if !defined(M_2PI_4_F)
+#define M_2PI_4_F static_cast<float>(M_2PI / 4.0)
+#endif
 
-		IsSwept = (vaDelta.LengthSqr() != 0);
+#if !defined(M_2PI_INV)
+#define M_2PI_INV 0.15931422
+#endif
 
-		vaExtents = max - min;
-		vaExtents *= 0.5f;
-		IsRay = (vaExtents.LengthSqr() < 1e-6);
+#if !defined(M_2PI_INV_F)
+#define M_2PI_INV_F static_cast<float>(M_2PI_INV)
+#endif
 
-		vaStartOffset = min + max;
+#if !defined(M_TWOPI)
+#define M_TWOPI 6.28318530717958647692
+#endif
 
-		vaStartOffset *= 0.5f;
-		vaStartP = source + vaStartOffset;
-		vaStartOffset *= -1.0f;
-	}
-};
+#if !defined(M_TWOPI_F)
+#define M_TWOPI_F static_cast<float>(M_TWOPI)
+#endif
 
+#if !defined(M_TWOPI_4)
+#define M_TWOPI_4 static_cast<float>(M_TWOPI / 4.0)
+#endif
 
+#if !defined(M_TWOPI_4_F)
+#define M_TWOPI_4_F static_cast<float>(M_TWOPI / 4.0)
+#endif
 
-struct csurface_t
-{
-	const char* name;
-	short surface_props;
-	unsigned short flags;
-};
+#if !defined(M_TWOPI_INV)
+#define M_TWOPI_INV 0.15931422
+#endif
 
-struct PlayerInfo_t
-{
-	// scoreboard information
-	char            name[MAX_PLAYER_NAME_LENGTH];
-	// local server user ID, unique while server is running
-	int				userID;
-	// global unique player identifer
-	char			guid[SIGNED_GUID_LEN + 1];
-	// friends identification number
-	uint32_t		friendsID;
-	// friends name
-	char			friendsName[MAX_PLAYER_NAME_LENGTH];
-	// true, if player is a bot controlled by game.dll
-	bool			fakeplayer;
-	// true if player is the HLTV proxy
-	bool			ishltv;
-	// custom files CRC for this player
-	unsigned long	customFiles[MAX_CUSTOM_FILES];
-	// this counter increases each time the server downloaded a new file
-	unsigned char	filesDownloaded;
-};
+#if !defined(M_TWOPI_INV_F)
+#define M_TWOPI_INV_F static_cast<float>(M_TWOPI_INV)
+#endif
 
-struct DrawModelState_t
-{
-	studiohdr_t* m_pStudioHdr;
-	StudioData_t* m_pStudioData;
-	IClientRenderable* m_pRenderable;
-	const matrix3x4* m_pModelToWorld;
-	StudioDecalHandle_t* m_hDecals;
-	int					 m_DrawFlags;
-	int					 m_Lod;
-};
+#if !defined(M_HALFPI)
+#define M_HALFPI 1.57079632679489661923
+#endif
 
-struct ModelRenderInfo_t
-{
-	Vec3			      m_vOrigin;
-	Vec3			      m_vAngles;
-	IClientRenderable*    m_pRenderable;
-	const model_t*		  m_pModel;
-	const matrix3x4*      m_pModelToWorld;
-	const matrix3x4*      m_pLightingOffset;
-	const Vec3*           m_pLightingOrigin;
-	int				      m_nFlags;
-	int				      m_nEntIndex;
-	int				      m_nSkin;
-	int					  m_nBody;
-	int				      m_nHitboxSet;
-	ModelInstanceHandle_t m_hMdlInstance;
+#if !defined(M_HALFPI_F)
+#define M_HALFPI_F static_cast<float>(M_HALFPI)
+#endif
 
-	ModelRenderInfo_t()
-	{
-		m_pModelToWorld = NULL;
-		m_pLightingOffset = NULL;
-		m_pLightingOrigin = NULL;
-	}
-};
+#if !defined(M_HALFPI_2)
+#define M_HALFPI_2 0.78539816339744830962
+#endif
 
-struct StaticPropRenderInfo_t
-{
-	const matrix3x4*        m_pModelToWorld;
-	const model_t*          m_pModel;
-	IClientRenderable*      m_pRenderable;
-	Vec3*                   m_pLightOrigin;
-	short					m_sSkin;
-	ModelInstanceHandle_t	m_hMdlInstance;
-};
+#if !defined(M_HALFPI_2_F)
+#define M_HALFPI_2_F static_cast<float>(M_HALFPI_2)
+#endif
+
+#if !defined(M_HALFPI_4)
+#define M_HALFPI_4 0.39269908169872415481
+#endif
+
+#if !defined(M_HALFPI_4_F)
+#define M_HALFPI_4_F static_cast<float>(M_HALFPI_4)
+#endif
+
+#if !defined(M_HALFPI_INV)
+#define M_HALFPI_INV 0.63661977236758134308
+#endif
+
+#if !defined(M_HALFPI_INV_F)
+#define M_HALFPI_INV_F static_cast<float>(M_HALFPI_INV)
+#endif
+
+#if !defined(M_QUARTERPI)
+#define M_QUARTERPI 0.78539816339744830962
+#endif
+
+#if !defined(M_QUARTERPI_F)
+#define M_QUARTERPI_F static_cast<float>(M_QUARTERPI)
+#endif
+
+#if !defined(M_QUARTERPI_2)
+#define M_QUARTERPI_2 0.39269908169872415481
+#endif
+
+#if !defined(M_QUARTERPI_2_F)
+#define M_QUARTERPI_2_F static_cast<float>(M_QUARTERPI_2)
+#endif
+
+#if !defined(M_QUARTERPI_4)
+#define M_QUARTERPI_4 0.19634954084936206923
+#endif
+
+#if !defined(M_QUARTERPI_4_F)
+#define M_QUARTERPI_4_F static_cast<float>(M_QUARTERPI_4)
+#endif
+
+#if !defined(M_QUARTERPI_INV)
+#define M_QUARTERPI_INV 2.6179938779914943654
+#endif
+
+#if !defined(M_QUARTERPI_INV_F)
+#define M_QUARTERPI_INV_F static_cast<float>(M_QUARTERPI_INV)
+#endif
+
+#if !defined(M_EPSILON)
+#define M_EPSILON 1e-6
+#endif
+
+#if !defined(M_EPSILON_F)
+#define M_EPSILON_F static_cast<float>(M_EPSILON)
+#endif
+
+#if !defined(M_EPSILON_S)
+#define M_EPSILON_S 1e-7
+#endif
+
+#if !defined(M_EPSILON_S_F)
+#define M_EPSILON_S_F static_cast<float>(M_EPSILON_S)
+#endif
+
+#if !defined(M_EPSILON_L)
+#define M_EPSILON_L 1e-9
+#endif
+
+#if !defined(M_EPSILON_L_F)
+#define M_EPSILON_L_F static_cast<float>(M_EPSILON_L)
+#endif
+
+#if !defined(M_EPSILON_UL)
+#define M_EPSILON_UL 1e-11
+#endif
+
+#if !defined(M_EPSILON_UL_F)
+#define M_EPSILON_UL_F static_cast<float>(M_EPSILON_UL)
+#endif
+
+#if !defined(M_EPSILON_DBL)
+#define M_EPSILON_DBL 1e-15
+#endif
+
+#if !defined(M_EPSILON_DBL_F)
+#define M_EPSILON_DBL_F static_cast<float>(M_EPSILON_DBL)
+#endif
+
+#if !defined(M_EPSILON_LDBL)
+#define M_EPSILON_LDBL 1e-17
+#endif
+
+#if !defined(M_EPSILON_LDBL_F)
+#define M_EPSILON_LDBL_F static_cast<float>(M_
