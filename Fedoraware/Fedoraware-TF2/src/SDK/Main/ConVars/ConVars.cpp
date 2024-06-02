@@ -4,22 +4,31 @@ void CConVars::Init()
 {
 	afkTimer = I::Cvar->FindVar("mp_idlemaxtime");
 
-	ConCommandBase* cmdBase = I::Cvar->GetCommands();
-	while (cmdBase != nullptr)
-	{
-		constexpr int FCVAR_HIDDEN = (int)EConVarFlags::FCVAR_HIDDEN;
-		constexpr int FCVAR_DEVELOPMENT_ONLY = (int)EConVarFlags::FCVAR_DEVELOPMENT_ONLY;
-		constexpr int FCVAR_CHEAT = (int)EConVarFlags::FCVAR_CHEAT;
-		constexpr int FCVAR_NOT_CONNECTED = (int)EConVarFlags::FCVAR_NOT_CONNECTED;
-		cmdBase->m_nFlags &= ~(FCVAR_HIDDEN | FCVAR_DEVELOPMENT_ONLY | FCVAR_CHEAT | FCVAR_NOT_CONNECTED);
+	if (!afkTimer) {
+		// Handle error
+	}
 
-		cmdBase = cmdBase->m_pNext;
+	using FlagType = EConVarFlags;
+	constexpr FlagType HIDDEN = FlagType::FCVAR_HIDDEN;
+	constexpr FlagType DEVELOPMENT_ONLY = FlagType::FCVAR_DEVELOPMENT_ONLY;
+	constexpr FlagType CHEAT = FlagType::FCVAR_CHEAT;
+	constexpr FlagType NOT_CONNECTED = FlagType::FCVAR_NOT_CONNECTED;
+
+	for (ConCommandBase* cmdBase = I::Cvar->GetCommands(); cmdBase != nullptr; cmdBase = cmdBase->m_pNext) {
+		cmdBase->m_nFlags &= ~(HIDDEN | DEVELOPMENT_ONLY | CHEAT | NOT_CONNECTED);
 	}
 }
 
-ConVar* CConVars::FindVar(const char* cvarname)
+using ConVarPtr = ConVar*;
+
+ConVarPtr CConVars::FindVar(const char* cvarname) const
 {
-	if (!cvarMap.contains(FNV1A::HashConst(cvarname)))
-		cvarMap[FNV1A::HashConst(cvarname)] = I::Cvar->FindVar(cvarname);
-	return cvarMap[FNV1A::HashConst(cvarname)];
+	const uint64_t hash = FNV1A::HashConst(cvarname);
+	if (!cvarMap.contains(hash)) {
+		cvarMap[hash] = I::Cvar->FindVar(cvarname);
+		if (!cvarMap[hash]) {
+			// Handle error
+		}
+	}
+	return cvarMap[hash];
 }
