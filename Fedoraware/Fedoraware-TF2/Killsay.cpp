@@ -7,7 +7,7 @@
 #include <string>
 
 // Initialize the killsay list
-std::vector<std::string> killsays = {
+constexpr std::vector<std::string> killsays = {
     "%victim%, you've just been media'ed",
     "%victim%, H - Harder Sempai!",
     "This is a dream, i cant believe im putting my dick in %victim% !",
@@ -54,61 +54,59 @@ std::vector<std::string> killsays = {
     "you sperg, i own as simple as that."
 };
 
-void CKillsay::FireGameEvent(FNV1A_t uNameHash, CGameEvent* pEvent)
-{
-    if (!Vars::Misc::Paste::Krillsays.Value)
-    {
+void CKillsay::FireGameEvent(FNV1A_t uNameHash, CGameEvent* pEvent) noexcept override {
+    if (!Vars::Misc::Paste::Krillsays.Value) {
         return;
     }
 
-    if (killsays.empty())
-    {
+    if (killsays.empty()) {
         return;
     }
 
-    if (uNameHash == FNV1A::HashConst("player_death"))
-    {
+    if (uNameHash == FNV1A::HashConst("player_death")) {
         const int attacker = Utils::GetPlayerForUserID(pEvent->GetInt("attacker"));
         const int userid = Utils::GetPlayerForUserID(pEvent->GetInt("userid"));
 
-        if (userid == I::EngineClient->GetLocalPlayer())
-        {
+        if (userid == I::EngineClient->GetLocalPlayer()) {
             return;
         }
 
-        if (attacker != I::EngineClient->GetLocalPlayer())
-        {
+        if (attacker != I::EngineClient->GetLocalPlayer()) {
             return;
         }
-
-        // Lol lets hope u dont have medal flip on and 9 lines of killsay
 
         const auto& pEntity = I::ClientEntityList->GetClientEntity(userid);
 
-        if (!pEntity)
-        {
+        if (!pEntity) {
             return;
         }
 
-        if (!pEntity->IsPlayer())
-        {
+        if (!pEntity->IsPlayer()) {
             return;
         }
 
         PlayerInfo_t pi = {};
 
-        if (!I::EngineClient->GetPlayerInfo(userid, &pi))
-        {
+        if (!I::EngineClient->GetPlayerInfo(userid, &pi)) {
             return;
         }
 
-        int nSelectedKillsay = I::UniformRandomStream->RandomInt(0, killsays.size() - 1);
-        std::string selectedKillsay = killsays.at(nSelectedKillsay);
+        if (I::UniformRandomStream->RandomInt(0, RAND_MAX) == 0) {
+            // This is a rare event, so it's okay to have a lot of killsay lines here
+            const char* szName = pi.name;
+            const std::string cmd = "say \"Lol lets hope u dont have medal flip on and 9 lines of killsay\"";
+            I::EngineClient->ServerCmd(cmd.c_str(), true);
+            return;
+        }
+
+        const int nSelectedKillsay = I::UniformRandomStream->RandomInt(0, killsays.size() - 1);
+        const std::string selectedKillsay = killsays.at(nSelectedKillsay);
+        const std::string cmd = "say \"" + selectedKillsay + "\"";
 
         const char* szName = pi.name;
         boost::replace_all(selectedKillsay, "%victim%", szName);
 
-        const std::string cmd = "say \"" + selectedKillsay + "\"";
         I::EngineClient->ServerCmd(cmd.c_str(), true);
     }
 }
+
