@@ -1,7 +1,12 @@
-#pragma once
-#include "../../Feature.h"
+#ifndef CPLAYERLISTUTILS_H
+#define CPLAYERLISTUTILS_H
 
+#include "../../Feature.h"
+#include <string>
+#include <vector>
+#include <unordered_map>
 #include <mutex>
+#include <string_view>
 
 struct ListPlayer
 {
@@ -26,30 +31,29 @@ struct PriorityLabel_t
 	bool Locked = false; // don't allow it to be removed
 };
 
-class CPlayerlistUtils
+class CPlayerlistUtils : public Feature
 {
 public:
-	bool GetTag(std::string sTag, PriorityLabel_t* plTag);
+	bool GetTag(std::string_view sTag, PriorityLabel_t* plTag) const noexcept;
 
-	void AddTag(uint32_t friendsID, std::string sTag, bool bSave = true, std::string sName = "");
-	void AddTag(int iIndex, std::string sTag, bool bSave = true, std::string sName = "");
-	void RemoveTag(uint32_t friendsID, std::string sTag, bool bSave = true, std::string sName = "");
-	void RemoveTag(int iIndex, std::string sTag, bool bSave = true, std::string sName = "");
-	bool HasTags(uint32_t friendsID);
-	bool HasTags(int iIndex);
-	bool HasTag(uint32_t friendsID, std::string sTag);
-	bool HasTag(int iIndex, std::string sTag);
+	void AddTag(uint32_t friendsID, std::string_view sTag, bool bSave = true, std::string_view sName = "");
+	void AddTag(int iIndex, std::string_view sTag, bool bSave = true, std::string_view sName = "");
+	void RemoveTag(uint32_t friendsID, std::string_view sTag, bool bSave = true, std::string_view sName = "");
+	void RemoveTag(int iIndex, std::string_view sTag, bool bSave = true, std::string_view sName = "");
+	bool HasTags(uint32_t friendsID) const noexcept;
+	bool HasTags(int iIndex) const noexcept;
+	bool HasTag(uint32_t friendsID, std::string_view sTag) const noexcept;
+	bool HasTag(int iIndex, std::string_view sTag) const noexcept;
 
-	int GetPriority(uint32_t friendsID);
-	int GetPriority(int iIndex);
-	bool GetSignificantTag(uint32_t friendsID, std::string* sTag, PriorityLabel_t* plTag, int iMode = 1); // iMode: 0 - Priorities & Labels, 1 - Priorities, 2 - Labels
-	bool GetSignificantTag(int iIndex, std::string* sTag, PriorityLabel_t* plTag, int iMode = 1); // iMode: 0 - Priorities & Labels, 1 - Priorities, 2 - Labels
-	bool IsIgnored(uint32_t friendsID);
-	bool IsIgnored(int iIndex);
-	bool IsFriend(int iIndex);
+	int GetPriority(uint32_t friendsID) const noexcept;
+	int GetPriority(int iIndex) const noexcept;
+	bool GetSignificantTag(uint32_t friendsID, std::string_view* sTag, PriorityLabel_t* plTag, int iMode = 1) const noexcept;
+	bool GetSignificantTag(int iIndex, std::string_view* sTag, PriorityLabel_t* plTag, int iMode = 1) const noexcept;
+	bool IsIgnored(uint32_t friendsID) const noexcept;
+	bool IsIgnored(int iIndex) const noexcept;
+	bool IsFriend(int iIndex) const noexcept;
 
-	void UpdatePlayers();
-	std::mutex mutex;
+	void UpdatePlayers() override;
 
 	const std::vector<const char*> vListPitch = { "None", "Up", "Down", "Zero", "Auto" };
 	const std::vector<const char*> vListYaw = { "None", "Forward", "Backward", "Left", "Right", "Invert", "Edge", "Auto" };
@@ -68,6 +72,10 @@ public:
 	bool bSavePlayers = false;
 	bool bLoadTags = true;
 	bool bSaveTags = false;
+
+	mutable std::mutex mutex;
 };
 
 ADD_FEATURE(CPlayerlistUtils, PlayerUtils)
+
+#endif //CPLAYERLISTUTILS_H
