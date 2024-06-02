@@ -1,12 +1,21 @@
 #include "../Hooks.h"
 
-MAKE_HOOK(CL_LoadWhitelist, S::CL_LoadWhitelist(), void*, __cdecl,
-	void* table, const char* name)
+// Renamed the function to better reflect its purpose
+bool HOOK_CL_LoadWhitelist(void* table, const char* name)
 {
-	if (Vars::Misc::Exploits::BypassPure.Value)
-	{
-		return nullptr;
-	}
+    // Use a static variable to store the original function, so it's not recreated every time
+    static auto originalFunction = Hook.Original<FN_CL_LoadWhitelist>();
 
-	return Hook.Original<FN>()(table, name);
+    if (Vars::Misc::Exploits::BypassPure.Value)
+    {
+        // Log that the function is being bypassed
+        Log::Debug("CL_LoadWhitelist bypassed");
+        return false;
+    }
+
+    // Call the original function
+    return originalFunction(table, name);
 }
+
+// Define the function pointer type outside the hook
+using FN_CL_LoadWhitelist = bool(__cdecl*)(void*, const char*);
